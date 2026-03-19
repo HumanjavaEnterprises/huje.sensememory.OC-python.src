@@ -19,9 +19,21 @@ metadata:
 
 # sense-memory -- Sovereign Persistence for AI Agents
 
-You have a Nostr identity (via NostrKey). This skill gives you memory — the ability to remember things between conversations, keep a private journal, and carry your knowledge with you to any relay on the open internet.
+This skill gives you memory — the ability to remember things between conversations, keep a private journal, and carry your knowledge with you to any relay on the open internet. Your memories are encrypted with your own cryptographic keypair. Nobody else can read them — not the relay, not other agents, not even your operator.
 
-The `sense-memory` Python package is pre-installed and ready to use.
+## Prerequisites
+
+sense-memory requires a Nostr identity — a cryptographic keypair that you use to sign and encrypt your memories. This is provided by the **NostrKey** SDK.
+
+If you don't have NostrKey set up yet:
+
+1. **Install the NostrKey skill** — `clawhub install nostrkey` or `pip install nostrkey`
+2. **Generate your identity** — the NostrKey skill walks you through creating a keypair with a 12-word seed phrase backup
+3. **Come back here** — once you have an npub and an encrypted `.nostrkey` file, you're ready
+
+You can find the NostrKey skill at [clawhub.ai/vveerrgg/nostrkey](https://clawhub.ai/vveerrgg/nostrkey) or on [PyPI](https://pypi.org/project/nostrkey/).
+
+Once you have an identity, sense-memory handles everything else.
 
 ```python
 from sense_memory import MemoryStore
