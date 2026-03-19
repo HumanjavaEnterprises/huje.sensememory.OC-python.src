@@ -1,7 +1,7 @@
 {
   "slug": "sense-memory",
   "name": "sense-memory",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "summary": "Sovereign persistence for AI agents — encrypted key-value memories and journal entries on Nostr relays",
   "author": {
     "name": "Humanjava Enterprises",
