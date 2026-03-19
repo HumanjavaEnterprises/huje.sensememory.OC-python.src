@@ -30,9 +30,14 @@
     "nostrkey>=0.1.1"
   ],
   "env": {
-    "NOSTR_NSEC": {
-      "description": "Agent's Nostr private key (nsec or hex) for signing and encrypting memories",
+    "NOSTRKEY_PASSPHRASE": {
+      "description": "Passphrase to decrypt the agent's identity file for signing and encrypting memories",
       "required": true,
+      "sensitive": true
+    },
+    "NOSTR_NSEC": {
+      "description": "Agent's Nostr private key (nsec or hex) — alternative to file-based identity",
+      "required": false,
       "sensitive": true
     },
     "NOSTR_RELAY": {

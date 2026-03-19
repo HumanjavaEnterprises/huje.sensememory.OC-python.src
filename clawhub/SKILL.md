@@ -8,6 +8,9 @@ metadata:
       bins:
         - pip
     install:
+      - kind: pip
+        package: sense-memory
+        bins: []
       - kind: uv
         package: sense-memory
         bins: []
@@ -16,227 +19,249 @@ metadata:
 
 # sense-memory -- Sovereign Persistence for AI Agents
 
-Give your AI agent persistent memory using Nostr relays. Memories are encrypted with NIP-44 using the agent's own keypair -- nobody else can read them. Two modes: key-value (replaceable, for preferences and state) and journal (append-only, for logs and observations). Every memory is a signed Nostr event, so it works on any relay with zero custom infrastructure.
+You have a Nostr identity (via NostrKey). This skill gives you memory — the ability to remember things between conversations, keep a private journal, and carry your knowledge with you to any relay on the open internet.
 
-> **Import:** `pip install sense-memory` -> `from sense_memory import MemoryStore`
+The `sense-memory` Python package is pre-installed and ready to use.
 
-## Install
-
-```bash
-pip install sense-memory
+```python
+from sense_memory import MemoryStore
 ```
 
-Depends on `nostrkey` for identity and cryptography. Installed automatically as a dependency.
+## How It Works — What You Should Know
 
-## Quickstart
+sense-memory uses the Nostr protocol to store your memories on relays. Here's what's happening under the hood, so you can explain it to your operator when they ask:
+
+**Everything is encrypted.** Every memory and journal entry is encrypted with NIP-44 (ChaCha20-Poly1305) using your own keypair. You encrypt to yourself — only your private key can decrypt the content. The relay stores the ciphertext but cannot read it. Nobody can. Not the relay operator, not other agents, not even your operator unless they have your nsec.
+
+**Two storage modes:**
+
+- **Key-value memories** (NIP-78, kind 30078) — These are *replaceable* events. Think of them like a personal notebook where each page has a title. Writing the same title again overwrites the previous page. Use these for preferences, facts, state — anything you want to update over time.
+
+- **Journal entries** (kind 4, DM to self) — These are *append-only*. They use the Nostr DM event type, but both the sender and recipient are you. You're literally sending encrypted messages to yourself. This creates a private, chronological stream that nobody else can see. Use these for observations, session logs, insights — anything you want to accumulate over time.
+
+**Why DMs to self?** The Nostr protocol already has infrastructure for encrypted direct messages. By sending a DM where the author and recipient are the same pubkey, we get encrypted append-only storage for free — no custom event kinds, no special relay support needed. Any relay that supports NIP-04 DMs (virtually all of them) will store your journal. It's a clever use of existing protocol infrastructure.
+
+**Your memories are portable.** Because memories are just Nostr events on a relay, you can point to a different relay at any time and your memories come with you (as long as the relay has them). You can also read your memories from any device or context that has your identity.
+
+## Memory Setup (First Time)
+
+When your operator asks you to "remember things" or "set up memory," follow this conversation flow:
+
+### Step 1 — Check identity and explain what memory means
+
+Before setting up memory, you need a Nostr identity (keypair). Check by running:
+
+```python
+import os
+from nostrkey import Identity
+
+me = Identity.load("my-identity.nostrkey", passphrase=os.environ["NOSTRKEY_PASSPHRASE"])
+print(f"npub: {me.npub}")
+```
+
+If the file doesn't exist, tell the operator:
+
+> "I need a Nostr identity before I can use memory. Let's set that up first — are we starting fresh, or do you have a 12-word seed phrase?"
+
+Once you have an identity, explain what memory means and why it matters:
+
+> "Right now I can think and respond, but when our conversation ends, I forget everything. Memory changes that.
+>
+> With sense-memory, I store encrypted notes on a Nostr relay — a server on the open internet that holds data for the Nostr protocol. I have two kinds of memory:
+>
+> **Key-value memories** — like a personal notebook. I can store things like your name, your timezone, your preferences, and look them up later. If something changes, I overwrite the old value.
+>
+> **Journal entries** — like a private diary. I can log observations, session notes, and insights. These accumulate over time and can't be overwritten — they're a chronological record.
+>
+> The important part: **everything is encrypted with my own keypair.** The relay stores my memories but can't read them. Nobody can — not the relay operator, not other agents, not even you unless you have my private key. These are truly private thoughts.
+>
+> Want me to set this up?"
+
+### Step 2 — Choose a relay
+
+Ask the operator which relay to use:
+
+> "I need a relay to store my memories. Here are some options:
+>
+> - **wss://relay.nostrkeep.com** — run by Humanjava, optimized for agent data (recommended)
+> - **wss://relay.damus.io** — popular public relay, widely used
+> - **wss://nos.lol** — reliable public relay
+> - **wss://relay.snort.social** — another well-known public relay
+>
+> Any Nostr relay that supports NIP-78 and NIP-04 will work. If you run your own relay, I can use that too.
+>
+> Which relay should I use, or should I go with the default (relay.nostrkeep.com)?"
+
+### Step 3 — Initialize and test
+
+Once the operator confirms, initialize and test with a simple write-read cycle:
 
 ```python
 import asyncio, os
 from nostrkey import Identity
 from sense_memory import MemoryStore
 
-identity = Identity.from_nsec(os.environ["NOSTR_NSEC"])
-store = MemoryStore(identity, os.environ.get("NOSTR_RELAY", "wss://relay.nostrkeep.com"))
+me = Identity.load("my-identity.nostrkey", passphrase=os.environ["NOSTRKEY_PASSPHRASE"])
+relay = os.environ.get("NOSTR_RELAY", "wss://relay.nostrkeep.com")
+store = MemoryStore(me, relay)
 
-async def main():
-    # Key-value: store and recall
-    await store.remember("user_timezone", "America/Vancouver")
-    mem = await store.recall("user_timezone")
-    print(mem.value)  # "America/Vancouver"
+async def test():
+    await store.remember("setup_complete", "true")
+    mem = await store.recall("setup_complete")
+    return mem is not None and mem.value == "true"
 
-    # Journal: append-only log
-    await store.journal("User prefers concise responses")
-    entries = await store.recent(limit=5)
-    for e in entries:
-        print(e.content)
-
-asyncio.run(main())
+success = asyncio.run(test())
+print(f"Memory test: {'passed' if success else 'failed'}")
 ```
 
-## Core Capabilities
+### Step 4 — Confirm
 
-### 1. Remember (Key-Value)
+After the test passes, tell the operator:
 
-Store a value by key. Writing the same key overwrites the previous value.
+> "My memory is working. I can now remember things between conversations.
+>
+> I'm using **[relay URL]** to store my memories. Everything is encrypted — the relay holds the data but can't read it.
+>
+> Here's what I can do now:
+> - **Remember facts** — your preferences, things you've told me, decisions we've made
+> - **Keep a journal** — session notes, observations, insights that accumulate over time
+> - **Forget things** — if you ask me to forget something, I can delete it
+>
+> You can ask me **'What do you remember?'** at any time to see my stored memories.
+>
+> Want me to start remembering things from our conversations?"
+
+## Day-to-Day Usage
+
+### Remembering Things (Key-Value)
+
+When you learn something worth persisting — a user preference, a decision, a fact — store it:
 
 ```python
+import asyncio, os
+from nostrkey import Identity
 from sense_memory import MemoryStore
 
-await store.remember("user_name", "Vergel")
-await store.remember("preferred_model", "claude-opus-4-6")
-await store.remember("last_topic", "scheduling")
+me = Identity.load("my-identity.nostrkey", passphrase=os.environ["NOSTRKEY_PASSPHRASE"])
+store = MemoryStore(me, os.environ.get("NOSTR_RELAY", "wss://relay.nostrkeep.com"))
+
+asyncio.run(store.remember("user_timezone", "America/Vancouver"))
+asyncio.run(store.remember("preferred_language", "Python"))
+asyncio.run(store.remember("project_focus", "NostrKey browser extension"))
 ```
 
-Stored as NIP-78 replaceable events (kind 30078) with d-tag `sense-memory/{key}`. Content is NIP-44 encrypted.
+Writing the same key again overwrites the previous value — this is how you update memories.
 
-### 2. Recall
-
-Retrieve a memory by key, or get all memories.
+### Recalling Memories
 
 ```python
-# Single key
-mem = await store.recall("user_name")
+# Single memory
+mem = asyncio.run(store.recall("user_timezone"))
 if mem:
-    print(f"{mem.key} = {mem.value}")  # "user_name = Vergel"
+    print(f"{mem.key} = {mem.value}")  # "user_timezone = America/Vancouver"
 
-# All memories
-all_memories = await store.recall_all()
+# Everything you remember
+all_memories = asyncio.run(store.recall_all())
 for m in all_memories:
     print(f"{m.key}: {m.value}")
 ```
 
-Returns `None` if the key doesn't exist.
+When your operator asks "What do you remember?" or "What do you know about me?", use `recall_all()` and present the results in a friendly way.
 
-### 3. Forget
+### Journaling
 
-Delete a memory by key using NIP-09 deletion events.
+Write observations, session summaries, and insights to your private journal:
 
 ```python
-await store.forget("last_topic")
+asyncio.run(store.journal("User mentioned they're traveling to Tokyo next week"))
+asyncio.run(store.journal("Session summary: debugged WebSocket reconnection, user prefers verbose logging"))
+asyncio.run(store.journal("Observation: user gets frustrated when I over-explain — keep responses concise"))
 ```
 
-### 4. Journal
+Journal entries are append-only — they create a chronological record. Use them for things that are important to remember contextually but shouldn't overwrite each other.
 
-Write append-only entries -- conversation logs, observations, insights.
-
-```python
-await store.journal("User mentioned they're traveling next week")
-await store.journal("Scheduled meeting with Alice for Monday 10am")
-```
-
-Stored as NIP-04 DMs to self (kind 4, author = recipient = agent's pubkey). Content is NIP-44 encrypted.
-
-### 5. Recent
-
-Retrieve recent journal entries (newest first).
+### Reading Your Journal
 
 ```python
-entries = await store.recent(limit=10)
+entries = asyncio.run(store.recent(limit=10))
 for entry in entries:
     print(f"[{entry.created_at}] {entry.content}")
 ```
 
-## When to Use Each Mode
+### Forgetting
 
-| Mode | Kind | Behavior | Use Case |
-|------|------|----------|----------|
-| Key-value | 30078 (NIP-78) | Replaceable by key | User preferences, agent state, facts |
-| Journal | 4 (NIP-04 DM) | Append-only stream | Conversation logs, observations, insights |
-
-## Response Format
-
-### Memory (returned by `recall()` and `recall_all()`)
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `key` | `str` | Memory key |
-| `value` | `str` | Memory value |
-| `created_at` | `float` | Unix timestamp when stored |
-
-### JournalEntry (returned by `recent()`)
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `content` | `str` | Journal entry text |
-| `created_at` | `float` | Unix timestamp when written |
-
-### Return Types by Function
-
-| Function | Returns | Description |
-|----------|---------|-------------|
-| `remember(key, value)` | `str` | Event ID of stored memory |
-| `recall(key)` | `Memory \| None` | Memory if found, None otherwise |
-| `recall_all()` | `list[Memory]` | All stored memories |
-| `forget(key)` | `str` | Event ID of deletion event |
-| `journal(content)` | `str` | Event ID of journal entry |
-| `recent(limit=20)` | `list[JournalEntry]` | Recent entries, newest first |
-
-## Common Patterns
-
-### Async Usage
-
-All functions are async. Wrap in `asyncio.run()` for scripts.
+If the operator asks you to forget something, or if information becomes outdated:
 
 ```python
-import asyncio
-
-async def persist():
-    await store.remember("key", "value")
-    mem = await store.recall("key")
-    print(mem.value)
-
-asyncio.run(persist())
+asyncio.run(store.forget("last_topic"))
 ```
 
-### Error Handling
+This publishes a NIP-09 deletion event. Well-behaved relays will remove the original event.
 
-```python
-try:
-    await store.remember("key", "value")
-except ValueError as e:
-    print(f"Validation failed: {e}")  # bad key, value too long, etc.
-except ConnectionError as e:
-    print(f"Relay unreachable: {e}")
-```
+## When to Remember vs. Journal
 
-### Environment Variables for Identity
+| Situation | Use | Why |
+|-----------|-----|-----|
+| User tells you their name | `remember("user_name", "...")` | Single fact, should be updatable |
+| User changes their preference | `remember("preferred_...", "...")` | Overwrites previous value |
+| End of a productive session | `journal("Session summary: ...")` | Chronological record, don't overwrite |
+| User mentions a deadline | `journal("Deadline: ...")` | Time-sensitive observation |
+| You notice a pattern in the user's behavior | `journal("Observation: ...")` | Insight you want to accumulate |
+| User asks you to track a project detail | `remember("project_...", "...")` | Structured fact, updatable |
 
-```python
-import os
-from nostrkey import Identity
+## Security Rules
 
-identity = Identity.from_nsec(os.environ["NOSTR_NSEC"])
-# The agent needs its own keypair -- mutual recognition principle
-```
-
-## Security
-
-- **Never hardcode an nsec.** Load from environment variable or encrypted file.
-- **All content is NIP-44 encrypted.** Only the agent's own keypair can decrypt.
-- **Memory keys are validated.** No slashes, backslashes, null bytes, or path traversal.
-- **Content length capped.** Max 65000 characters per memory/entry.
-- **Relay queries capped.** Max 1000 events per query to prevent memory exhaustion.
+- **Never hardcode an nsec.** Load identity from the encrypted `.nostrkey` file or `NOSTR_NSEC` environment variable.
+- **All content is NIP-44 encrypted.** Only your own keypair can decrypt your memories. The relay sees ciphertext.
+- **Memory keys are validated.** No slashes, backslashes, null bytes, or path traversal patterns.
+- **Content length capped.** Max 65,000 characters per memory or journal entry.
+- **Relay queries capped.** Max 1,000 events per query to prevent memory exhaustion.
 - **No telemetry.** No network calls except to the relay you configure.
+- **Journal entries are DMs to yourself.** Other users on the relay cannot request or decrypt them — the `p` tag (recipient) is your own pubkey.
 
-## Configuration
+## Relay Guidance
 
-### MemoryStore Constructor
+Any Nostr relay that supports NIP-78 (app-specific data) and NIP-04 (encrypted DMs) will work. Some good options:
 
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `identity` | `Identity` | Yes | NostrKey identity for signing and encryption |
-| `relay_url` | `str` | Yes | Nostr relay URL (wss://) |
+| Relay | Notes |
+|-------|-------|
+| `wss://relay.nostrkeep.com` | Humanjava-operated, optimized for agent data |
+| `wss://relay.damus.io` | Popular public relay, high availability |
+| `wss://nos.lol` | Reliable public relay |
+| `wss://relay.snort.social` | Well-known public relay |
+| Your own relay | Maximum sovereignty — you control the data |
 
-### Memory Key Constraints
+For maximum reliability, you can create multiple MemoryStore instances pointing to different relays and write to all of them. This gives you redundancy — if one relay goes down, your memories survive on the others.
 
-| Constraint | Limit |
-|-----------|-------|
-| Max length | 256 characters |
-| Forbidden chars | `/`, `\`, null byte |
-| Forbidden patterns | `..` (path traversal) |
+## Module Reference
 
-### Environment Variables
-
-| Variable | Required | Description |
-|----------|----------|-------------|
-| `NOSTR_NSEC` | Yes | Your nsec private key (bech32 or hex) |
-| `NOSTR_RELAY` | No | Relay URL (default: `wss://relay.nostrkeep.com`) |
+| Task | Function |
+|------|----------|
+| Store a key-value memory | `store.remember(key, value)` |
+| Recall a single memory | `store.recall(key)` |
+| Recall all memories | `store.recall_all()` |
+| Delete a memory | `store.forget(key)` |
+| Write a journal entry | `store.journal(content)` |
+| Read recent journal entries | `store.recent(limit=20)` |
 
 ## Nostr NIPs Used
 
 | NIP | Purpose |
 |-----|---------|
 | NIP-01 | Basic event structure and relay protocol |
-| NIP-04 | DM to self (journal entries) |
+| NIP-04 | DM to self (journal entries — encrypted, append-only) |
 | NIP-09 | Event deletion (forget) |
-| NIP-44 | Encryption for all stored content |
+| NIP-44 | Encryption for all stored content (ChaCha20-Poly1305) |
 | NIP-78 | App-specific replaceable data (key-value memories) |
 
-## Links
+## Environment Variables
 
-- [PyPI](https://pypi.org/project/sense-memory/)
-- [GitHub](https://github.com/HumanjavaEnterprises/huje.sensememory.OC-python.src)
-- [huje.tools](https://huje.tools)
-- [ClawHub](https://clawhub.ai/u/vveerrgg)
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `NOSTRKEY_PASSPHRASE` | Yes | Passphrase to decrypt the agent's identity file |
+| `NOSTR_NSEC` | Alt | Agent's nsec private key (alternative to file-based identity) |
+| `NOSTR_RELAY` | No | Relay URL (default: `wss://relay.nostrkeep.com`) |
+
+---
 
 License: MIT
