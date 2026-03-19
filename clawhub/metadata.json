@@ -1,7 +1,7 @@
 {
   "slug": "sense-memory",
   "name": "sense-memory",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "summary": "Sovereign persistence for AI agents — encrypted key-value memories and journal entries on Nostr relays",
   "author": {
     "name": "Humanjava Enterprises",
@@ -27,8 +27,19 @@
     "python": ">=3.10"
   },
   "dependencies": [
-    "nostrkey"
+    "nostrkey>=0.1.1"
   ],
+  "env": {
+    "NOSTR_NSEC": {
+      "description": "Agent's Nostr private key (nsec or hex) for signing and encrypting memories",
+      "required": true,
+      "sensitive": true
+    },
+    "NOSTR_RELAY": {
+      "description": "Relay URL for storing memories (default: wss://relay.nostrkeep.com)",
+      "required": false
+    }
+  },
   "categories": [
     "persistence",
     "memory",

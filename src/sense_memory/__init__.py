@@ -3,7 +3,7 @@
 from .types import Memory, JournalEntry
 from .store import MemoryStore
 
-__version__ = "0.1.0"
+__version__ = "0.1.1"
 
 __all__ = [
     "Memory",
