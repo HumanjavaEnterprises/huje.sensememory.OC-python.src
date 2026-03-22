@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "sense-memory"
-version = "0.1.2"
+version = "0.2.0"
 description = "Sovereign persistence for OpenClaw AI agents — encrypted memories on Nostr relays"
 readme = "README.md"
 license = "MIT"
