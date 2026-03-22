@@ -18,6 +18,19 @@ pytest -v
 - `clawhub/` — OpenClaw skill metadata
 - `examples/` — runnable examples
 
+## Publish
+
+```bash
+# PyPI (needs API token + OTP)
+python3 -m build
+python3 -m twine upload dist/sense_memory-X.Y.Z*
+
+# ClawHub
+npx clawhub publish ./clawhub --slug sense-memory --name "sense-memory" --version X.Y.Z --tags latest --changelog "..."
+```
+
+Version must be bumped in 3 places: `pyproject.toml`, `__init__.py`, `clawhub/metadata.json`
+
 ## Conventions
 
 - Python 3.10+, hatchling build, ruff linter (100 char line length)
