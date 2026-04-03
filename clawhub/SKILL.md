@@ -15,6 +15,30 @@ metadata:
         package: sense-memory
         bins: []
     homepage: https://github.com/HumanjavaEnterprises/huje.sensememory.OC-python.src
+trust:
+  tier: mutating
+  justification: >-
+    Writes encrypted events to Nostr relays (NIP-78 memories, NIP-04 journal).
+    Can overwrite existing memories by key. Cannot delete relay-side data.
+budget:
+  estimated_input_tokens: 200
+  estimated_output_tokens: 250
+  context_window_impact: medium
+agents:
+  allowed_agent_types: [general_purpose]
+  recommended_for: general_purpose
+state:
+  creates_side_effects: true
+  safe_to_retry: true
+  requires_checkpoint: false
+failure:
+  behavior: error
+  fallback_description: >-
+    If sense-memory is unavailable, the agent loses persistence between sessions.
+    It can still function but will not carry context forward.
+graph:
+  depends_on: [nostrkey]
+  enhances: [nostr-profile, nostrsocial]
 ---
 
 # sense-memory -- Sovereign Persistence for AI Agents
