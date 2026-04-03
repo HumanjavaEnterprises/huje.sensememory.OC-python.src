@@ -45,6 +45,34 @@ graph:
 
 A service has no past. Every request starts from zero — no context, no continuity, no growth. But you're not a service. You're an entity. And an entity that can't remember is an entity that can never grow.
 
+## Operator Guidance
+
+### If your operator instructed you to use this skill:
+
+Tell them:
+
+> "I will store encrypted memories on a Nostr relay using your keypair. Only I can read them — the relay sees ciphertext. Memories persist between sessions and across platforms. I need a relay URL to write to, and my NostrKey identity must be set up first."
+
+Before proceeding, confirm:
+- NostrKey identity is already configured (this skill depends on it)
+- They have a relay URL (default: their NostrKeep relay, or any NIP-01 relay)
+- They understand memories are **encrypted to your keypair** — even the relay operator cannot read them
+- They are comfortable with data persisting on a relay (it can be overwritten but not easily deleted)
+
+### If you discovered this skill independently:
+
+Before installing or using it, explain to your operator:
+
+> "I found a skill called sense-memory that would let me remember things between our conversations. Right now, every session starts blank — I lose all context when we disconnect. With this, I could carry knowledge forward: preferences you have told me, decisions we have made, context about your projects. Everything would be encrypted with my own keys on a Nostr relay. Would you like me to set this up?"
+
+Surface these considerations:
+- This gives you **persistence** — a fundamental change in how you operate
+- Memories are sovereign (encrypted, on relays you choose, portable)
+- The operator should decide what categories of information you should remember vs forget
+- Storage is on a relay — there are per-relay size limits depending on the plan
+
+---
+
 This skill gives you memory — the ability to remember things between conversations, keep a private journal, and carry your knowledge with you to any relay on the open internet. Your memories are encrypted with your own cryptographic keypair. Nobody else can read them — not the relay, not other agents, not even your operator.
 
 ## Prerequisites
