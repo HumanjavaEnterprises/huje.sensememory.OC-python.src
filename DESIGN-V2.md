@@ -319,10 +319,49 @@ All v2 data stored as NIP-78 (kind 30078) events, NIP-44 encrypted.
 
 ---
 
+## Relationship to MemPalace
+
+MemPalace (milla-jovovich/mempalace) is the inspiration, not a dependency. We take ideas, not code.
+
+| MemPalace | sense-memory v2 |
+|-----------|----------------|
+| Local files | Encrypted Nostr relay events (NIP-78 + NIP-44) |
+| Stores everything forever | Knowledge halflife — unused memories fade |
+| Palace metaphor (wings/halls/rooms) | Ontological (domain/facet/insight) |
+| AAAK compression (their format) | Our own compressed format (same principle, our syntax) |
+| No identity model | Nostr keypair IS the identity — only you can read your memories |
+| No contradictions | Contradictions detected, old beliefs superseded |
+| No introspection | Active self-review — prune stale, surface conflicts |
+| MIT code dependency | Zero dependency — inspired by, not built on |
+| Free open source | Free tier (huje.tools) + paid tier (NostrKeep) |
+
+Same destination, different vehicle. Ours is sovereign.
+
+## Current Status
+
+### Built (v2 types — 2026-04-07)
+- PersonaMemory dataclass with domain/facet/key/value + full lifecycle fields
+- Knowledge halflife decay function (current_relevance)
+- Connection boost, contradiction penalty, superseded 4x faster decay
+- State computation: active → fading → forgotten → dissolved
+- IntrospectionReport dataclass
+- Serialization (to_dict/from_dict) for NIP-78 event storage
+- 31 tests passing
+
+### Next (v2 store methods)
+1. persona_remember() — store on relay with d-tag hierarchy
+2. persona_recall() — retrieve by domain/facet/key
+3. persona_search() — theme-based weighted search
+4. persona_compress() — compressed context for LLM loading
+5. persona_connect() / persona_contradict() — relationship management
+6. persona_introspect() — self-review
+7. persona_prune() — lifecycle state transitions
+
 ## References
 
-- MemPalace (milla-jovovich/mempalace) — inspiration for persona structure and AAAK compression concept
+- MemPalace (milla-jovovich/mempalace) — inspiration for structured memory and compression concepts
 - sense-wonder `reflect()` — weighted theme scoring model
 - NIP-78 (kind 30078) — replaceable events for structured app data
 - NIP-44 — ChaCha20-Poly1305 encryption
 - Archon Object Model — domains map to archon attribute domains
+- NSE Five Pillars — each pillar writes to a persona domain
