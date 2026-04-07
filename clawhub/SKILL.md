@@ -1,7 +1,7 @@
 ---
 name: sense-memory
 description: Sovereign persistence for AI agents — encrypted key-value memories and journal entries on Nostr relays
-version: 0.1.2
+version: 0.1.3
 metadata:
   openclaw:
     requires:

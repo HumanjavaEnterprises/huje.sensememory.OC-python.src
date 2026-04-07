@@ -58,6 +58,13 @@ class MemoryStore:
 
         self._identity = identity
 
+    def __repr__(self) -> str:
+        """Redacted repr — never expose identity secrets."""
+        return (
+            f"MemoryStore(pubkey={self._identity.public_key_hex[:8]}..., "
+            f"relay_url={self._relay_url!r})"
+        )
+
     @property
     def pubkey(self) -> str:
         """The agent's public key (hex)."""

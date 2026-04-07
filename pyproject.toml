@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "sense-memory"
-version = "0.2.0"
+version = "0.1.3"
 description = "Sovereign persistence for OpenClaw AI agents — encrypted memories on Nostr relays"
 readme = "README.md"
 license = "MIT"
@@ -33,7 +33,7 @@ classifiers = [
     "Topic :: Software Development :: Libraries :: Python Modules",
 ]
 dependencies = [
-    "nostrkey>=0.1.1",
+    "nostrkey>=0.3.0",
 ]
 
 [project.optional-dependencies]

@@ -15,7 +15,7 @@ An AI agent's memory should:
 ## v1 → v2 Compatibility
 
 v1 API stays unchanged:
-- `remember(key, value)` — still works, stores in the "flat" wing
+- `remember(key, value)` — still works, stores in the "flat" domain
 - `recall(key)` — still works
 - `recall_all()` — still works
 - `forget(key)` — still works
@@ -33,34 +33,34 @@ Inspired by the ancient Greek memory palace technique and MemPalace's implementa
 ### Levels
 
 ```
-Wing (domain)
-  └── Hall (type)
-       └── Room (specific memory)
+Domain (domain)
+  └── Facet (type)
+       └── Insight (specific memory)
 ```
 
-**Wings** — broad domains of knowledge:
+**Domains** — broad domains of knowledge:
 - `self` — who the agent is, its values, its identity
 - `people` — people the agent knows, their preferences, relationships
 - `projects` — ongoing work, decisions, progress
 - `world` — facts, references, external knowledge
 - `skills` — capabilities, tools, procedures the agent has learned
 
-**Halls** — types of knowledge within a wing:
+**Facets** — types of knowledge within a domain:
 - `facts` — declarative knowledge ("Vergel prefers conventional commits")
 - `beliefs` — opinions and interpretations ("This architecture is better because...")
 - `decisions` — choices made and why ("We chose Orpheus over Kokoro because...")
 - `procedures` — how to do things ("Deploy VoxRelay: npm run build, wrangler deploy")
 - `emotions` — felt experiences ("The breakthrough on March 28 felt significant")
 
-**Rooms** — individual memories with a unique key.
+**Insights** — individual memories with a unique key.
 
 ### Storage Format
 
-d-tag: `sense-memory/persona/{wing}/{hall}/{room-key}`
+d-tag: `sense-memory/persona/{domain}/{facet}/{insight-key}`
 
 Example: `sense-memory/persona/people/facts/vergel-prefers-vanilla-js`
 
-v1 memories (flat): `sense-memory/{key}` (unchanged, treated as wing="flat")
+v1 memories (flat): `sense-memory/{key}` (unchanged, treated as domain="flat")
 
 ---
 
@@ -73,8 +73,8 @@ Every memory has a relevance score that decays over time unless reinforced.
 ```python
 @dataclass
 class PersonaMemory:
-    wing: str
-    hall: str
+    domain: str
+    facet: str
     key: str
     value: str
 
@@ -153,23 +153,23 @@ For loading memory context into an LLM prompt, memories are compressed into a st
 ### Compressed Format
 
 ```
-[wing:people/hall:facts]
+[domain:people/facet:facts]
 vergel: vanilla-js, conventional-commits, no-coauthor, accessibility-first
 lisa: artist, teaches-workshops, partner
 ruca: dog, walking-companion, idea-catalyst
 
-[wing:projects/hall:decisions]
+[domain:projects/facet:decisions]
 voxrelay-voice: orpheus-3b>kokoro (warmth, 3B params, emotion tags)
 voxrelay-pricing: lite-55/parttime-85/business-179/practice-349 (1% gross rev)
 nostrkeep-memory: build-own>fork-mempalace (paid service, no dependency)
 
-[wing:self/hall:beliefs]
+[domain:self/facet:beliefs]
 sovereign-ai: every process needs its own nostr keypair
 aspirational-language: mirror the user's journey, never make them feel small
 ```
 
 ### Compression Rules
-- Wing/hall as bracketed headers, not repeated per line
+- Domain/facet as bracketed headers, not repeated per line
 - Key: compressed-value format (no full sentences)
 - Comparisons use `>` for "chosen over"
 - Parenthetical for reasoning
@@ -216,18 +216,18 @@ class IntrospectionReport:
     contradictions: list[tuple[PersonaMemory, PersonaMemory]]  # pairs that contradict
     stale_beliefs: list[PersonaMemory]   # beliefs with low confidence + low relevance
     orphaned: list[PersonaMemory]        # memories with no connections
-    overloaded_halls: list[str]         # halls with too many active memories
+    overloaded_facets: list[str]         # facets with too many active memories
 
     # Suggestions
     suggested_connections: list[tuple[PersonaMemory, PersonaMemory]]  # memories that should be linked
     suggested_revisions: list[PersonaMemory]   # beliefs that may need updating
-    suggested_compressions: list[str]         # wings that could be compressed
+    suggested_compressions: list[str]         # domains that could be compressed
 ```
 
 ### Contradiction Detection
 
 When storing a new memory:
-1. Check existing memories in the same wing/hall for semantic overlap
+1. Check existing memories in the same domain/facet for semantic overlap
 2. If the new value contradicts an existing one (detected by theme overlap + opposing sentiment):
    - Mark the old memory's `contradicts` list
    - Set `superseded_by` on the old memory
@@ -256,21 +256,21 @@ class MemoryStore:
     async def recent(limit) -> list[JournalEntry]
 
     # v2 — Persona
-    async def persona_remember(wing, hall, key, value, themes=[], connections=[]) -> str
-    async def persona_recall(wing=None, hall=None, key=None) -> list[PersonaMemory]
+    async def persona_remember(domain, facet, key, value, themes=[], connections=[]) -> str
+    async def persona_recall(domain=None, facet=None, key=None) -> list[PersonaMemory]
     async def persona_search(query, limit=10) -> list[PersonaMemory]
     async def persona_connect(key1, key2) -> None
     async def persona_contradict(old_key, new_key) -> None
 
     # v2 — Lifecycle
     async def persona_introspect() -> IntrospectionReport
-    async def persona_compress(wing=None) -> str  # compressed format for LLM context
+    async def persona_compress(domain=None) -> str  # compressed format for LLM context
     async def persona_prune() -> int  # move fading→forgotten, dissolved→deleted. Returns count.
 
     # v2 — Metadata
-    async def persona_wings() -> list[str]  # list all wings
-    async def persona_halls(wing) -> list[str]  # list halls in a wing
-    async def persona_stats() -> dict  # total memories, per-state counts, per-wing counts
+    async def persona_domains() -> list[str]  # list all domains
+    async def persona_facets(domain) -> list[str]  # list facets in a domain
+    async def persona_stats() -> dict  # total memories, per-state counts, per-domain counts
 ```
 
 ---
@@ -283,7 +283,7 @@ All v2 data stored as NIP-78 (kind 30078) events, NIP-44 encrypted.
 
 | What | d-tag | Content (encrypted JSON) |
 |------|-------|--------------------------|
-| Persona memory | `sense-memory/persona/{wing}/{hall}/{key}` | `{ type, wing, hall, key, value, relevance, halflife_days, last_accessed, access_count, connections, contradicts, superseded_by, themes, source, confidence, state, created_at }` |
+| Persona memory | `sense-memory/persona/{domain}/{facet}/{key}` | `{ type, domain, facet, key, value, relevance, halflife_days, last_accessed, access_count, connections, contradicts, superseded_by, themes, source, confidence, state, created_at }` |
 | Embedding | `sense-memory/embed/{key}` | `{ key, embedding: float[], model, created_at }` |
 | Flat memory (v1) | `sense-memory/{key}` | `{ type, key, value, ts }` (unchanged) |
 | Journal (v1) | kind 4 DM to self | `{ type, content, ts }` (unchanged) |
@@ -295,7 +295,7 @@ All v2 data stored as NIP-78 (kind 30078) events, NIP-44 encrypted.
 |---------|-------------------|--------------|
 | Flat key-value (v1) | Yes | Yes |
 | Journal (v1) | Yes | Yes |
-| Persona structure | 1 wing, 1 hall | Unlimited |
+| Persona structure | 1 domain, 1 facet | Unlimited |
 | Compression | Basic | Full AAAK-style |
 | Semantic search | Theme-based only | Theme + embedding |
 | Introspection | Manual only | Scheduled + manual |
@@ -325,4 +325,4 @@ All v2 data stored as NIP-78 (kind 30078) events, NIP-44 encrypted.
 - sense-wonder `reflect()` — weighted theme scoring model
 - NIP-78 (kind 30078) — replaceable events for structured app data
 - NIP-44 — ChaCha20-Poly1305 encryption
-- Archon Object Model — wings map to archon attribute domains
+- Archon Object Model — domains map to archon attribute domains
